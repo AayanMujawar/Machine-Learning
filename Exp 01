@@ -1,0 +1,38 @@
+import pandas as pd
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+
+# Step 1: Load Dataset
+df = pd.read_csv("credit_scoring.csv")
+print("Original Data:\n", df.head())
+
+# Step 2: Check for missing values
+print("\nMissing Values:\n", df.isnull().sum())
+
+# Step 3: Handle missing values
+# Impute numeric columns with median (income and dependents have NaNs)
+imputer = SimpleImputer(strategy='median')
+df[['Mto_ingreso_mensual', 'Nro_dependiente']] = imputer.fit_transform(
+    df[['Mto_ingreso_mensual', 'Nro_dependiente']]
+)
+
+# Drop ID column (not useful for modeling)
+df.drop(columns=['ID'], inplace=True)
+
+# Step 4: Feature Scaling
+numerical_cols = df.columns.drop('Default')
+scaler = StandardScaler()
+df[numerical_cols] = scaler.fit_transform(df[numerical_cols])
+
+# Step 5: Train-test split
+X = df.drop(columns='Default')
+y = df['Default']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Step 6: Final check
+print("\nTrain/Test shapes:")
+print("X_train:", X_train.shape)
+print("X_test:", X_test.shape)
+print("y_train:", y_train.shape)
+print("y_test:", y_test.shape)

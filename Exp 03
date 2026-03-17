@@ -1,0 +1,95 @@
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
+
+# Load data
+# Assuming the CSV has a header row, otherwise you might need to provide column names
+df = pd.read_csv('credit_scoring.csv', header=0)
+
+# Clean column names by stripping whitespace
+df.columns = df.columns.str.strip()
+
+# Handle missing values by replacing 'NA' with the mean of the column
+df.replace('NA', np.nan, inplace=True)
+df = df.astype(float)
+df.fillna(df.mean(), inplace=True)
+
+# Define features (X) and target (y)
+# Check if 'ID' and 'Default' columns exist before dropping
+if 'ID' in df.columns and 'Default' in df.columns:
+    X = df.drop(['ID', 'Default'], axis=1).values
+    y = df['Default'].values
+else:
+    # Assuming 'ID' is the first column (index 0) and 'Default' is the second column (index 1)
+    # based on the previous error and the variable state
+    X = df.drop(df.columns[[0, 1]], axis=1).values
+    y = df[df.columns[1]].values
+
+
+# Scale features (important for gradient descent)
+scaler = StandardScaler()
+X = scaler.fit_transform(X)
+
+# Split dataset
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# Initialize parameters
+w = np.random.randn(X_train.shape[1])  # shape (n_features,)
+b = 0
+learning_rate = 0.01
+epochs = 5000
+
+# Sigmoid function
+def sigmoid(z):
+    return 1 / (1 + np.exp(-z))
+
+# Forward propagation
+def forward_prop(w, b, X):
+    return sigmoid(np.dot(X, w) + b)
+
+# Cost function (Log loss)
+def cost(y_hat, y):
+    m = len(y)
+    # Clip predictions to avoid log(0)
+    y_hat = np.clip(y_hat, 1e-15, 1 - 1e-15)
+    loss = -(1/m) * np.sum(y * np.log(y_hat) + (1 - y) * np.log(1 - y_hat))
+    return loss
+
+# Backward propagation
+def back_prop(X, y, y_hat):
+    m = len(y)
+    dw = (1/m) * np.dot(X.T, (y_hat - y))
+    db = (1/m) * np.sum(y_hat - y)
+    return dw, db
+
+# Training loop
+for epoch in range(epochs):
+    y_hat = forward_prop(w, b, X_train)
+    loss = cost(y_hat, y_train)
+    dw, db = back_prop(X_train, y_train, y_hat)
+    w = w - learning_rate * dw
+    b = b - learning_rate * db
+
+    if epoch % 500 == 0:
+        print(f"Epoch {epoch}, Loss: {loss:.4f}")
+
+# Predict function
+def predict(X, w, b, threshold=0.5):
+    prob = forward_prop(w, b, X)
+    return (prob >= threshold).astype(int)
+
+# Evaluate on test set
+y_pred = predict(X_test, w, b)
+
+# Calculate and print evaluation metrics
+cm = confusion_matrix(y_test, y_pred)
+print("\nConfusion Matrix:\n", cm)
+
+print("\nAccuracy:", accuracy_score(y_test, y_pred))
+print("Precision:", precision_score(y_test, y_pred))
+print("Recall:", recall_score(y_test, y_pred))
+print("F1 Score:", f1_score(y_test, y_pred))
