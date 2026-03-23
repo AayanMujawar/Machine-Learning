@@ -15,6 +15,7 @@ skills_db = [
     "python","java","sql","machine learning","deep learning",
     "nlp","tensorflow","pytorch","pandas","numpy",
     "html","css","javascript","react","nodejs",
+    "n8n","agenticAI","genAI","LLMs"
 ]
 
 def extract_skills(text):
